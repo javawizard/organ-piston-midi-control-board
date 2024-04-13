@@ -57,9 +57,6 @@ class Piston {
 
     void send_midi_event(uint8_t midi_channel, uint8_t midi_note, bool current_state, uint32_t led_color) {
       if (TinyUSBDevice.mounted()) {
-        // lots of narrowing conversion warnings here; it turns out the | operator promotes its operands to ints. grr. oh well. could static_cast our way out of the warning but whatever.
-        // uint8_t packet[] = {(current_state ? MIDI_NOTE_ON : MIDI_NOTE_OFF) | midi_channel, midi_note, (current_state ? uint8_t{127} : uint8_t{0})};
-        // tud_midi_stream_write(0, packet, sizeof(packet));
         if (current_state) {
           MIDI.sendNoteOn(midi_note, 127, midi_channel);
         } else {
@@ -138,29 +135,6 @@ Keyboard keyboards[] = {
   Keyboard(0x60, 0x61, 2, 0, 0x00FFFF), // pedal left (translated through an LTC4316 on the pedal controller)
   // Keyboard(0x62, 0x63, 2, 32, 0xFF00FF) // pedal right (translated through an LTC4316 on the pedal controller)
 };
-
-// extern "C" uint16_t load_midi_usb_descriptor(uint8_t *dst, uint8_t *itf) {
-//   uint8_t str_index = tinyusb_add_string_descriptor("Organ Piston MIDI Controller (by javawizard weeeeee)");
-//   uint8_t ep_num = tinyusb_get_free_duplex_endpoint();
-//   TU_VERIFY(ep_num != 0);
-//   uint8_t descriptor[TUD_MIDI_DESC_LEN] = {
-//       // Interface number, string index, EP Out & EP In address, EP size
-//       TUD_MIDI_DESCRIPTOR(*itf, str_index, ep_num, (uint8_t)(0x80 | ep_num),
-//                           64)};
-//   *itf += 1;
-//   memcpy(dst, descriptor, TUD_MIDI_DESC_LEN);
-//   return TUD_MIDI_DESC_LEN;
-// }
-
-// void sink_midi_events() {
-//   // Read off and discard any MIDI events the host has sent us. We don't use these but they'll queue up and cause
-//   // whatever's connected to the port on the USB host side to hang if we don't read them off.
-//   uint8_t packet[4];
-
-//   while (tud_midi_available()) {
-//     tud_midi_packet_read(reinterpret_cast<uint8_t*>(&packet));
-//   }
-// }
 
 void flash_error_and_restart(uint8_t flashes) {
   for (int i = 0; i < flashes; i++) {
