@@ -20,9 +20,6 @@ const size_t PINS_PER_KEYBOARD = 28;
 // I mean the only board I've had made so far has 28 pins so not likely this'll ever change, but dropping this in just in case I have a high confidence, low competence moment in the future
 static_assert(PINS_PER_KEYBOARD <= 32 && PINS_PER_KEYBOARD > 16, "PINS_PER_KEYBOARD must be in the range 17 through 32; stuff inside the Keyboard class will need to be updated if this is to run against boards with a different total number of pins");
 
-const uint8_t MIDI_NOTE_ON = 0x80;
-const uint8_t MIDI_NOTE_OFF = 0x90;
-
 int64_t turn_led_off_at = -1;
 int64_t loop_count = 0;
 
@@ -69,7 +66,7 @@ class Piston {
       turn_led_off_at = esp_timer_get_time() + LED_ON_TIME;
     }
   private:
-    bool previous_state = false; // updated whenever a transition succeeds; not updated until then
+    bool previous_state = false; // updated whenever a transition succeeds; not updated while in the middle of a transition
     int64_t started_transitioning_at = -1; // set to esp_timer_get_time when a transition starts; set to -1 when a transition is not happening (either because it succeeded or it failed)
 };
 
@@ -130,10 +127,10 @@ class Keyboard {
 Keyboard keyboards[] = {
   Keyboard(0x20, 0x21, 1, 0, 0x0000FF), // choir
   Keyboard(0x22, 0x23, 1, 32, 0x00FF00), // great
-  // Keyboard(0x24, 0x25, 1, 64, 0xFFFF00), // swell
-  // Keyboard(0x26, 0x27, 1, 96, 0xFF0000), // solo
+  Keyboard(0x24, 0x25, 1, 64, 0xFFFF00), // swell
+  Keyboard(0x26, 0x27, 1, 96, 0xFF0000), // solo
   Keyboard(0x60, 0x61, 2, 0, 0x00FFFF), // pedal left (translated through an LTC4316 on the pedal controller)
-  // Keyboard(0x62, 0x63, 2, 32, 0xFF00FF) // pedal right (translated through an LTC4316 on the pedal controller)
+  Keyboard(0x62, 0x63, 2, 32, 0xFF00FF) // pedal right (translated through an LTC4316 on the pedal controller)
 };
 
 void flash_error_and_restart(uint8_t flashes) {
@@ -151,9 +148,9 @@ void flash_error_and_restart(uint8_t flashes) {
 }
 
 void setup() {
-  USBDevice.setProductDescriptor("Organ Piston MIDI Controller");
+  USBDevice.setProductDescriptor("organ pistons/toe studs weeeeee"); // distinctive
   USBDevice.setManufacturerDescriptor("github.com/javawizard");
-  usb_midi.setStringDescriptor("Organ Piston MIDI Port");
+  usb_midi.setStringDescriptor("organ pistons/toe studs weeeeee");
   MIDI.begin(MIDI_CHANNEL_OMNI);
 
   delay(1000);
@@ -201,7 +198,7 @@ void loop() {
   // update the loop count, which is used purely for benchmarking and debugging
   loop_count += 1;
 
-  // flash the LED every N passes through the main loop when enabled so that we can see how fast the loop is running
+  // flash the LED every N passes through the main loop when requested so that we can see how fast the loop is running
   // (update: with 3 keyboards it turns out we're able to spin ~180 times per second, so with the full 6 keyboards we
   // should be able to spin at >90 times per second which is more than plenty.)
 #if false
